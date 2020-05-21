@@ -1,0 +1,80 @@
+4\x zRimport serial
+import time
+import socket
+import threading
+import select
+
+X = '0'
+Y = '0'
+Z = '0'
+S = '0'
+    
+if __name__ == '__main__':
+    #conn.close()
+    ser = serial.Serial('/dev/ttyACM0',baudrate = 9600,
+    parity=serial.PARITY_NONE,stopbits=serial.STOPBITS_ONE,bytesize=serial.EIGHTBITS,
+    timeout=1) 
+    ser.flush()
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('192.168.0.102', 25000))
+    count = 0
+    while 1:
+        print("wait for input..")
+        s.listen(100)
+        conn, addr = s.accept()
+        while 1:
+            try:
+                print("open")
+                
+                    
+                line='aaa'
+                line = ser.readline().decode('utf-8').rstrip()
+                if len(line) < 2 :
+                    line = 'aaaa'
+                if line[0] == 'X' :
+                    print (line[0:len(line)])
+                    X = line[0:len(line)]
+                    conn.sendall(line.encode())
+                    print("sended")
+                    #time.sleep(1)
+                
+                elif  line[0] == 'S' :
+                    print ("get S",line[1:len(line)])
+                    S = line[1:len(line)]
+                    conn.sendall(line.encode())
+                    print("sended")
+                    #time.sleep(1)
+                elif  line[0] == 'Z' :
+                    print ("get Z",line[1:len(line)])
+                    Z = line[1:len(line)]
+                    conn.sendall(line.encode())
+                    print("sended")
+                    #time.sleep(1)
+                else :
+                    print ("get noe")
+                    conn.sendall(line.encode())
+                    print("sended")
+                    #time.sleep(1)
+                data = conn.recv(1024)
+                print("recved")
+                if not data:
+                    break
+                rec = data.decode()
+                print(rec[0])
+                inp = rec[0].encode()
+                print(inp, count)
+                count+=1
+                #ser.write(inp)
+               
+            except Exception as inst:
+                print(type(inst))
+                print(inst.args)
+                print(inst)
+                print("line = ",line)
+                print("except close")
+                break
+                conn.close()
+    print("end program close")
+    conn.close()
+
