@@ -1,0 +1,187 @@
+
+#define PIN_GIMBAL_PWM_MODE 10
+#define PIN_GIMBAL_PWM_PITCH 9
+#define PIN_GIMBAL_PWM_YAW 11
+
+#define L_PWM_VAL_MODE 125 // 125
+
+#define L_PWM_VAL_YAW_STOP 185 // 185
+#define L_PWM_VAL_YAW_CW 210 // 197
+#define L_PWM_VAL_YAW_CCW 150 // 178
+
+#define L_PWM_VAL_PITCH_MIN 158 // 158
+#define L_PWM_VAL_PITCH_MID 190 // 190
+#define L_PWM_VAL_PITCH_MAX 221 // 221
+
+#include "TinyGPS++.h"
+
+TinyGPSPlus gps;
+
+int PWM = 190;
+char input;
+int Angel = 185 ;
+int ran = 0;
+int i =0;
+int spin = 185;
+unsigned int timestamp = 0;
+int count = 0;
+
+
+int Gpsdata;             // for incoming serial data 
+unsigned int finish =0;  // indicate end of message
+unsigned int pos_cnt=0;  // position counter
+unsigned int lat_cnt=0;  // latitude data counter 
+unsigned int log_cnt=0;  // longitude data counter
+unsigned int flg    =0;  // GPS flag 
+unsigned int com_cnt=0;  // comma counter
+char lat[20];            // latitude array
+char lg[20];             // longitude array
+int tcount = 0;
+void Receive_GPS_Data();
+/**************************************************************************************
+  Function    : setup()
+  Description : Use it to initialize variables, pin modes, start using libraries, etc.
+                The setup function will only run once, after each power up or reset
+                of the Arduino board.
+**************************************************************************************/
+  void setup()
+  {
+    Serial.begin(9600);   // opens serial port, sets data rate to 9600 bps
+    Serial3.begin(9600);   // opens serial port, sets data rate to 9600 bps
+    pinMode(PIN_GIMBAL_PWM_MODE, OUTPUT);
+    pinMode(PIN_GIMBAL_PWM_PITCH, OUTPUT);
+    pinMode(PIN_GIMBAL_PWM_YAW, OUTPUT);
+
+    analogWrite(PIN_GIMBAL_PWM_MODE, L_PWM_VAL_MODE);
+    analogWrite(PIN_GIMBAL_PWM_PITCH, L_PWM_VAL_PITCH_MID);
+    analogWrite(PIN_GIMBAL_PWM_YAW, L_PWM_VAL_YAW_STOP);  
+  }
+ 
+/************************************************************************************
+  Function    : loop()
+  Description : loops consecutively, allowing your program to change and respond.
+                Use it to actively control the Arduino board.
+************************************************************************************/
+  void loop()
+  {
+    if (Serial3.available() > 0) {
+    char data = Serial3.read();
+    
+    Receive_GPS_Data(); 
+    //Serial.print("You sent me: ");
+    //Serial.println(data);
+    /*input = Serial.read();
+    Serial.print("Now Spin = ");*/
+    switch (data){
+    case 'a': //clockwise
+      //Serial.print("Press A = ");
+      //for (i=0; i<5;i++){
+        //analogWrite(PIN_GIMBAL_PWM_YAW, L_PWM_VAL_YAW_CW);
+        //delay(500);
+      //} // 45ฺ clockwise
+     // analogWrite(PIN_GIMBAL_PWM_YAW, L_PWM_VAL_YAW_STOP);
+     
+      //Serial.println(L_PWM_VAL_YAW_CW);    
+      spin = L_PWM_VAL_YAW_CW ;
+
+      break;
+    
+    case 'd': //counter clockwise
+      //Serial.print("Press D = ");
+      //Serial.println(L_PWM_VAL_YAW_CCW);
+      //for (i=0; i<5;i++){
+      //  analogWrite(PIN_GIMBAL_PWM_YAW, L_PWM_VAL_YAW_CCW);
+      //  delay(500);
+     // } // 45ฺ couterclockwise
+      //analogWrite(PIN_GIMBAL_PWM_YAW, L_PWM_VAL_YAW_STOP);
+        
+      spin = L_PWM_VAL_YAW_CCW ;
+      break;
+  
+    case 's': //stop
+      //Serial.print("Press s = ");
+      //Serial.println(L_PWM_VAL_YAW_STOP);
+      analogWrite(PIN_GIMBAL_PWM_YAW, L_PWM_VAL_YAW_STOP);      
+      spin = L_PWM_VAL_YAW_STOP ;
+      break;
+
+    case 'q': //stop
+      //Serial.print("Press q = ");
+      //Serial.println(158);
+      if(PWM>165){
+      PWM = PWM - 5;}
+      break;
+
+    case 'w': //stop
+      //Serial.print("Press w = ");
+      //Serial.println(190);
+      break;
+
+    case 'e': //stop
+      //Serial.print("Press e = ");
+      //Serial.println(221);
+      if(PWM<221){
+      PWM = PWM + 5;
+    }     
+      break;
+    
+    case 'f': //stop
+      analogWrite(PIN_GIMBAL_PWM_PITCH , PWM);
+      analogWrite(PIN_GIMBAL_PWM_YAW, spin);
+      Serial.print(spin);
+      Serial.print(PWM);
+      Serial.println("1222");
+      //delay(300);  
+    default: 
+      analogWrite(PIN_GIMBAL_PWM_PITCH , PWM);
+      analogWrite(PIN_GIMBAL_PWM_YAW, spin);
+      Serial.print(spin);
+      Serial.print(",PWM = ");
+      Serial.println(PWM);
+
+      //delay(300);
+    }
+    delay(500);
+    }
+  else {
+      
+      analogWrite(PIN_GIMBAL_PWM_PITCH , PWM);
+      analogWrite(PIN_GIMBAL_PWM_YAW, spin);  
+     //Serial.print("fuck pan");       
+      //Serial.print(spin);
+      //Serial.print(PWM);
+      //Serial.println("Default");
+      delay(500);
+      }
+  }
+  
+  
+/************************************************************************************
+  Function    : Receive_GPS_Data()
+  Description : finding Latitudse and longitude from GPRMC message
+ 
+************************************************************************************/
+  void Receive_GPS_Data()
+   {
+    while(Serial3.available()){ // check for gps data
+    if(gps.encode(Serial3.read()))// encode gps data
+    { 
+      
+//Get the latest info from the gps object which it derived from the data sent by the GPS unit
+      Serial.print("X.");
+      Serial.print(gps.location.lat(), 6);
+      Serial.print(".");
+      //Serial.print(gps.location.lat(), 6);
+      Serial.print("Y.");
+      Serial.println(gps.location.lng(), 6);
+      //Serial.println(gps.location.lng(), 6);
+      /*Serial.print("S");
+      Serial.println(gps.speed.mph());
+      Serial.print("Z");
+      Serial.println(gps.altitude.meters());*/
+      //delay(500);     
+      tcount++; 
+   }
+     
+  }
+ }

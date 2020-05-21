@@ -1,0 +1,8 @@
+
+*.jpg
+
+*.avi
+
+source/build/main/
+
+*.exe
